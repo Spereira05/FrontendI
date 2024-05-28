@@ -1,3 +1,4 @@
+
 :root {
 
     /* COLORS */
@@ -10,7 +11,7 @@
     /** PADDING & MARGINS */
     --h-padding: 20px;
     --v-padding: 20px;
-    --gap: 15px;
+    --gap: 20px;
 
-    --speed
+    --speed: 0.5s;
 }

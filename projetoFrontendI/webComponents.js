@@ -1,3 +1,4 @@
+
 /**TODO HEADER */
 const headerTemplate = document.createElement("template");
 headerTemplate.innerHTML = `
@@ -19,7 +20,7 @@ headerTemplate.innerHTML = `
     }
 
     h1 {
-        color: var(--color-text-li ht);
+        color: var(--color-text-light);
         font-size: clamp(32px, 4vw, 48px);
     }
     p {
@@ -37,7 +38,7 @@ headerTemplate.innerHTML = `
         min-width: 32px;
         min-height: 32px;
         cursor: pointer;
-        margin-left: auto
+        margin-left: auto;
     }
 </style>
 
@@ -292,7 +293,7 @@ checkItemTemplate.innerHTML = `
         gap: 10px;
         justify-content: space-between;
         align-items: center;
-        background-color: var(--color-text-dark);
+        background-color: var(--color-text-light);
         padding: 20px;
         transition: transform 0.3s ease-in-out;
     }
@@ -303,7 +304,7 @@ checkItemTemplate.innerHTML = `
         overflow: hidden;
         text-overflow: ellipsis;
         user-select: none;
-        color: var(--color-text-light);
+        color: var(--color-text-dark);
     }
 
     .icon {
@@ -313,7 +314,7 @@ checkItemTemplate.innerHTML = `
         min-height: 32px;
     }
     .checkbox {
-        background-color: var(--color-text-light);
+        background-color: var(--color-text-dark);
         padding: 5px;
         cursor: pointer;
     }
@@ -412,35 +413,165 @@ class CheckItem extends Item {
 customElements.define("check-item", CheckItem);
 
 
+/**TODO MODAL */
 const todoModalTemplate = document.createElement("template");
 todoModalTemplate.innerHTML = `
-    
-    <style>
-        #overlay {
+<style>
+    @import url("system.css");
 
-        }
+    :host, #overlay {
+        position: absolute;
+        inset: 0;
+    }
 
-        .modal {
-            position: absolute;
-            width: 590px;
-            height: 402px;
-            color: --color-primary;
-            padding: 30px;
-            z-index: 9999;
-            margin: auto;
+    :host {
+        display: none;
+        justify-content: center;
+        align-items: center;
+    }
 
-        }
-    </style>
+    #overlay {
+        background-color: var(--color-text-dark);
+        mix-blend-mode: multiply;
+        backdrop-filter: blur(3px);
+        
+        transition: opacity var(--speed) ease-in-out;
+    }
 
-    <div class=modal>
+    #dialog {
+        display: flex;
+        width: 100%;
+        max-width: 400px;
+        flex-direction: column;
+        position: absolute;
+        background-color: var(--color-primary);
+        padding: var(--v-padding) var(--h-padding);
+        gap: var(--gap);
+        filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.5));
+        transition: transform var(--speed) ease-in-out, opacity var(--speed) ease;
+        transform: translateY(50px);
+    }
 
+    h2, input {
+        margin: 0;
+        color: var(--color-text-dark);
+    }
+    h2 {
+        font-size: 42px;
+        font-weight: 500;
+    }
+
+    input {
+        flex: 1;
+        border: 1px solid var(--color-text-dark);
+        padding: 15px 10px;
+        font-size: 18px;
+    }
+    input:focus{
+        outline: none;
+    }
+
+    #actions-container {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--gap);
+        flex: 1;
+        margin-top: 20px;
+    }
+
+    button {
+        border: none;
+        flex: 1;
+        background-color: transparent;
+        height: 48px;
+        padding: 10px;
+        cursor: pointer;
+    }
+    button:active svg {
+        transform: scale(0.9);
+    }
+    #confirm {
+        background-color: var(--color-terciary);
+    }
+
+</style>
+
+<div id="overlay"></div>
+
+<div id="dialog">
+    <h2>Modal Title</h2>
+    <input type="text">
+    <div id="actions-container">
+        <button id="cancel">
+            <svg width="100%" height="100%" viewBox="0 0 24.342 24.342" fill="var(--color-text-dark)">
+                <path d="m12.171 8.4754-8.4754-8.4754-3.6954 3.6954 8.4754 8.4754-8.4754 8.4754 3.6954 3.6954 8.4754-8.4754 8.4754 8.4754 3.6954-3.6954-8.4754-8.4754 8.4754-8.4754-3.6954-3.6954z"/>
+            </svg>
+        </button>
+        <button id="confirm">
+            <svg width="100%" height="100%" viewBox="0 0 24.342 24.342" fill="var(--color-text-light)">
+                <path d="m20.497 2.6458 3.8447 3.865-15.105 15.185-9.2366-9.2856 3.8447-3.865 5.3919 5.4205z"/>
+            </svg>
+        </button>
     </div>
+</div>  
 `;
+
 class TodoModal extends HTMLElement {
+    shadowRoot;
     constructor() {
         super();
 
+        this.shadowRoot = this.attachShadow({mode: "closed"});
+        this.shadowRoot.append(todoModalTemplate.content.cloneNode(true));
+
+        this.shadowRoot.querySelector("#overlay").onclick = () => {
+            this.hide();
+        }
+        this.shadowRoot.querySelector("#cancel").onclick = () => {
+            this.hide();
+        }
+
+        const input = this.shadowRoot.querySelector("input");
+        input.addEventListener("keypress", (event) => {
+            if (event.key === "Enter" && input.value.trim() !== "") {
+                this.dispatchEvent(new CustomEvent("confirm", {
+                    detail: {
+                        value: input.value
+                    }
+                }));
+                this.hide();
+            }
+        });
+
+        // Existing click event listener for #confirm button remains
+        this.shadowRoot.querySelector("#confirm").onclick = () => {
+            if(input.value.trim() === "") return;
+
+            this.dispatchEvent(new CustomEvent("confirm", {
+                detail: {
+                    value: input.value
+                }
+            }));
+            this.hide();
+        }
 
     }
+
+    show(state) {
+
+        let title;
+        if(state === "tasks") {
+            title = "Add Task";
+        } else {
+            title = "Add Item";
+        }
+        this.shadowRoot.querySelector("h2").innerText = title;
+        this.style.display = "flex";
+    }
+
+    hide() {
+        this.shadowRoot.querySelector("input").value = "";
+        this.style.display = "none";
+    }
 }
-customElements.define("todo-modal", TodoModal)
+customElements.define("todo-modal", TodoModal);
